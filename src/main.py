@@ -14,7 +14,7 @@ smiles_container = [{"molecule_id": 1, "smiles_structure": "c1cc(C)ccc1"},
 @app.get("/molecules/all", tags=["Molecules"], summary="Get all molecules")
 def get_molecules():
     """Get List all molecules. Endpoint will return all existed molecules"""
-    if len(smiles_container) >= 1:
+    if smiles_container:
         return smiles_container
     else:
         raise HTTPException(status_code=404, detail="Molecules are not found")
@@ -22,9 +22,11 @@ def get_molecules():
 @app.get("/molecules/{molecule_id}", tags=["Molecules"], summary="Find molecule by id")
 def get_molecule(molecule_id: int):
     """Get molecule by identifier. Endpoint will return molecule with searched id"""
-    for molecule in smiles_container:
-        if molecule["molecule_id"] == molecule_id:
-            return molecule
+    # Convert list to dictionary for O(1) lookups
+    smiles_dict = {molecule["molecule_id"]: molecule for molecule in smiles_container}
+    molecule = smiles_dict.get(molecule_id)
+    if molecule:
+        return molecule
     raise HTTPException(status_code=404, detail="Molecule is not found")
 
 @app.get("/molecules", tags=["Molecules"], summary="Find molecule by substructure")
@@ -75,13 +77,14 @@ async def upload_file(file: UploadFile):
         csv_file = io.StringIO(contents.decode('utf-8'))
         reader = csv.reader(csv_file)
         next(reader)  # Skip the header row
-        for row in reader:
+        # for row in reader:
+        for molecule_id, mol in reader:
             # Create an instance of the Molecule class
-            structure = Chem.MolFromSmiles(row[1])
+            structure = Chem.MolFromSmiles(mol)
             if structure is None:
                 raise HTTPException(status_code=400, detail=f"Invalid SMILES substructure in your file: {row}")
             else:
-                molecule_instance = MoleculeCreate(molecule_id=int(row[0]), smiles_structure=row[1])
+                molecule_instance = MoleculeCreate(molecule_id=int(molecule_id), smiles_structure=mol)
                 # Convert the instance to a dictionary
                 molecule_dict = molecule_instance.dict()
                 smiles_container.append(molecule_dict)
@@ -92,10 +95,12 @@ async def upload_file(file: UploadFile):
 @app.delete("/molecules/{molecules_id}", tags=["Molecules"], summary="Delete molecule by id",response_description="Molecule was deleted successfully")
 def delete_molecule(molecule_id: int):
     """Delete a molecule by identifier. Endpoint will return deleted structure"""
-    for molecule in smiles_container:
-        if molecule['molecule_id'] == molecule_id:
-            index = smiles_container.index(molecule)
-            deleted_molecule = smiles_container.pop(index)
-            return deleted_molecule
+    # Convert list to dictionary for O(1) lookups
+    smiles_dict = {molecule["molecule_id"]: molecule for molecule in smiles_container}
+    molecule = smiles_dict.get(molecule_id)
+    if molecule:
+        index = smiles_container.index(molecule)
+        deleted_molecule = smiles_container.pop(index)
+        return deleted_molecule
     raise HTTPException(status_code=404, detail="Molecule is not found")
 
