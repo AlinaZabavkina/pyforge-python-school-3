@@ -5,8 +5,8 @@ services:
     image: d53d6f228639
     container_name: fastapi_app_1
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../src
+      dockerfile: ../Dockerfile
     ports:
       - "8001:80"
 
@@ -14,8 +14,8 @@ services:
     image: d53d6f228639
     container_name: fastapi_app_2
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../src
+      dockerfile: ../Dockerfile
     ports:
       - "8002:80"
 
