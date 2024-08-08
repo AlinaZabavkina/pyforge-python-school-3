@@ -1,8 +1,9 @@
 from rdkit import Chem
 from fastapi import FastAPI, status, HTTPException, UploadFile
-from models import MoleculeCreate, MoleculeUpdate
 import csv
 import io
+
+from src.models import MoleculeUpdate, MoleculeCreate
 
 app = FastAPI()
 
