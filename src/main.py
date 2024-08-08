@@ -1,6 +1,5 @@
 from rdkit import Chem
-from fastapi import FastAPI, status, HTTPException, UploadFile, Query, Body
-from typing import List, Optional
+from fastapi import FastAPI, status, HTTPException, UploadFile
 import csv
 import io
 
@@ -32,7 +31,7 @@ def get_molecule(molecule_id: int):
     raise HTTPException(status_code=404, detail="Molecule is not found")
 
 @app.get("/molecules", tags=["Molecules"], summary="Find molecule by substructure")
-def substructure_search(smiles_structure: str, list_of_structures: Optional[List[MoleculeCreate]] = Body(None)):
+def substructure_search(smiles_structure: str):
     """Substructure search for all added molecules. Endpoint will return all structures that contain the searched substructure"""
     substructure = Chem.MolFromSmiles(smiles_structure)
     if substructure is None:
