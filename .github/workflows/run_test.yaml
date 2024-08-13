@@ -25,12 +25,21 @@ jobs:
         pip install -r docker/requirements.txt
         pip install pytest
         pip install python-multipart
-        pip install flake8
 
     - name: Run tests
       run: |
         pytest test/
 
-    - name: Run flake8
-      run: flake8 .
+  run_flake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          pip install flake8
+
+      - name: Run flake8
+        run: flake8 .
 
