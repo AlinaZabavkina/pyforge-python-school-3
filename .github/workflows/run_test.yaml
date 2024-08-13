@@ -25,7 +25,12 @@ jobs:
         pip install -r docker/requirements.txt
         pip install pytest
         pip install python-multipart
+        pip install flake8
 
     - name: Run tests
       run: |
         pytest test/
+
+    - name: Run flake8
+      run: flake8 .
+
