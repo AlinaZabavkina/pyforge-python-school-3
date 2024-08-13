@@ -1,8 +1,9 @@
 from rdkit import Chem
 from fastapi import FastAPI, status, HTTPException, UploadFile
-from models import MoleculeCreate, MoleculeUpdate
 import csv
 import io
+
+from src.models import MoleculeUpdate, MoleculeCreate
 
 app = FastAPI()
 
@@ -82,7 +83,7 @@ async def upload_file(file: UploadFile):
             # Create an instance of the Molecule class
             structure = Chem.MolFromSmiles(mol)
             if structure is None:
-                raise HTTPException(status_code=400, detail=f"Invalid SMILES substructure in your file: {row}")
+                raise HTTPException(status_code=400, detail=f"Invalid SMILES substructure in your file: {mol}")
             else:
                 molecule_instance = MoleculeCreate(molecule_id=int(molecule_id), smiles_structure=mol)
                 # Convert the instance to a dictionary
