@@ -1,5 +1,5 @@
 from fastapi import FastAPI,status,HTTPException
-from models import User
+from schemas import User
 
 app = FastAPI()
 
