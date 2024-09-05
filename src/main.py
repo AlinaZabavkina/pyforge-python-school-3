@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, Query
 from sqlalchemy.orm import Session
 from rdkit import Chem
@@ -6,12 +7,25 @@ import csv
 import io
 from models import SessionLocal, engine, Molecule
 from schemas import MoleculeUpdate, MoleculeCreate
+import redis
+
+# Connect to Redis
+redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 app = FastAPI()
 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def get_cached_result(key: str):
+    result = redis_client.get(key)
+    if result:
+        return json.loads(result)
+    return None
+
+def set_cache(key: str, value: dict, expiration: int = 60):
+    redis_client.setex(key, expiration, json.dumps(value))
 
 # Dependency to get the SQLAlchemy session
 def get_db():
@@ -24,34 +38,59 @@ def get_db():
 @app.get("/molecules/all", tags=["Molecules"], summary="Get all molecules")
 def get_molecules(limit: int = Query(None, description="Limit the number of molecules returned"), db: Session = Depends(get_db)):
     """Get List all molecules. Endpoint will return a limited number of molecules based on the provided limit"""
-    logger.info(f"Fetching up to {limit} molecules")
+    cache_key = f"molecules:all:limit:{limit}"
+    cached_molecules = get_cached_result(cache_key)
+
+    if cached_molecules:
+        logger.info(f"Fetching {limit} molecules from cache")
+        return {"source": "cache", "data": cached_molecules}
+
+    logger.info(f"Fetching {limit} molecules from database")
     query = db.query(Molecule)
     if limit:
         query = query.limit(limit)
 
     molecules = query.all()
     if molecules:
-        logger.info(f"Fetched {len(molecules)} molecules")
-        return (molecule for molecule in molecules)
-    else:
-        logger.warning("No molecules found")
-        raise HTTPException(status_code=404, detail="Molecules are not found")
+        result = [{"molecule_id": mol.molecule_id, "smiles_structure": mol.smiles_structure} for mol in molecules]
+        set_cache(cache_key, result)
+        logger.info(f"Fetched {len(molecules)} molecules and stored in cache")
+        return {"source": "database", "data": result}
 
+    logger.warning("No molecules found")
+    raise HTTPException(status_code=404, detail="Molecules not found")
 
 @app.get("/molecules/{molecule_id}", tags=["Molecules"], summary="Find molecule by id")
-def get_molecule(molecule_id: int, db: Session = Depends(get_db)):
-    """Get molecule by identifier. Endpoint will return molecule with searched id"""
-    logger.info(f"Fetching molecule with ID: {molecule_id}")
+async def get_molecule(molecule_id: int, db: Session = Depends(get_db)):
+    """Get a molecule by identifier. The result is cached."""
+    cache_key = f"molecule:{molecule_id}"
+    cached_molecule = get_cached_result(cache_key)
+
+    if cached_molecule:
+        logger.info(f"Fetching molecule with ID {molecule_id} from cache")
+        return {"source": "cache", "data": cached_molecule}
+
+    logger.info(f"Fetching molecule with ID {molecule_id} from database")
     molecule = db.query(Molecule).filter(Molecule.molecule_id == molecule_id).first()
     if molecule:
-        logger.info(f"Molecule with ID {molecule_id} found")
-        return molecule
+        result = {"molecule_id": molecule.molecule_id, "smiles_structure": molecule.smiles_structure}
+        set_cache(cache_key, result)
+        logger.info(f"Molecule with ID {molecule_id} fetched and cached")
+        return {"source": "database", "data": result}
+
     logger.warning(f"Molecule with ID {molecule_id} not found")
     raise HTTPException(status_code=404, detail="Molecule is not found")
 
 @app.get("/molecules", tags=["Molecules"], summary="Find molecule by substructure")
-def substructure_search(smiles_structure: str, db: Session = Depends(get_db)):
-    """Substructure search for all added molecules. Endpoint will return all structures that contain the searched substructure"""
+async def substructure_search(smiles_structure: str, db: Session = Depends(get_db)):
+    """Substructure search for all added molecules. The result is cached."""
+    cache_key = f"substructure:{smiles_structure}"
+    cached_result = get_cached_result(cache_key)
+
+    if cached_result:
+        logger.info(f"Fetching substructure search result for {smiles_structure} from cache")
+        return {"source": "cache", "data": cached_result}
+
     logger.info(f"Substructure search for: {smiles_structure}")
     substructure = Chem.MolFromSmiles(smiles_structure)
     if substructure is None:
@@ -69,34 +108,47 @@ def substructure_search(smiles_structure: str, db: Session = Depends(get_db)):
             list_of_matches.append({"molecule_id": molecule.molecule_id, "smiles_structure": molecule.smiles_structure})
 
     if list_of_matches:
-        logger.info(f"Found {len(list_of_matches)} matches for the substructure")
-        return list_of_matches
-    else:
-        logger.warning("No molecules found with the given substructure")
-        raise HTTPException(status_code=404, detail="No molecules found with the given substructure")
+        set_cache(cache_key, list_of_matches)
+        logger.info(f"Found {len(list_of_matches)} matches for the substructure and cached the result")
+        return {"source": "database", "data": list_of_matches}
+
+    logger.warning("No molecules found with the given substructure")
+    raise HTTPException(status_code=404, detail="No molecules found with the given substructure")
+
 
 @app.put("/molecules/{molecule_id}", tags=["Molecules"], summary="Update molecule structure", response_description="Molecule was updated successfully")
-def update_molecule(molecule_id: int, updated_molecule: MoleculeUpdate, db: Session = Depends(get_db)):
-    """Updating a molecule by identifier. Endpoint will return updated structures"""
+async def update_molecule(molecule_id: int, updated_molecule: MoleculeUpdate, db: Session = Depends(get_db)):
+    """Update a molecule by identifier. Cache is invalidated."""
     logger.info(f"Updating molecule with ID: {molecule_id}")
     molecule = db.query(Molecule).filter(Molecule.molecule_id == molecule_id).first()
     if molecule:
         molecule.smiles_structure = updated_molecule.smiles_structure
         db.commit()
         db.refresh(molecule)
-        logger.info(f"Molecule with ID {molecule_id} updated successfully")
+
+        # Invalidate related cache keys
+        redis_client.delete(f"molecule:{molecule_id}")
+        redis_client.delete("molecules:all")
+
+        logger.info(f"Molecule with ID {molecule_id} updated successfully and cache invalidated")
         return molecule
+
     logger.warning(f"Molecule with ID {molecule_id} not found for update")
-    raise HTTPException(status_code=404, detail="Molecule with searched id is not found")
+    raise HTTPException(status_code=404, detail="Molecule is not found")
+
 
 @app.post("/molecules", status_code=status.HTTP_201_CREATED, tags=["Molecules"], summary="Create new molecule", response_description="Molecule was created successfully")
-def add_molecule(new_molecule: MoleculeCreate, db: Session = Depends(get_db)):
-    """Add molecule and its identifier. Endpoint will return newly created structure"""
+async def add_molecule(new_molecule: MoleculeCreate, db: Session = Depends(get_db)):
+    """Add a molecule. Cache is invalidated."""
     logger.info("Adding a new molecule")
     molecule = Molecule(smiles_structure=new_molecule.smiles_structure)
     db.add(molecule)
     db.commit()
     db.refresh(molecule)
+
+    # Invalidate related cache keys
+    redis_client.delete("molecules:all")
+
     logger.info(f"New molecule added with ID: {molecule.molecule_id}")
     return molecule
 
@@ -126,14 +178,20 @@ async def upload_file(file: UploadFile, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="File extension is not allowed. Please upload csv file.")
 
 @app.delete("/molecules/{molecule_id}", tags=["Molecules"], summary="Delete molecule by id", response_description="Molecule was deleted successfully")
-def delete_molecule(molecule_id: int, db: Session = Depends(get_db)):
-    """Delete a molecule by identifier. Endpoint will return deleted structure"""
+async def delete_molecule(molecule_id: int, db: Session = Depends(get_db)):
+    """Delete a molecule by identifier. Cache is invalidated."""
     logger.info(f"Deleting molecule with ID: {molecule_id}")
     molecule = db.query(Molecule).filter(Molecule.molecule_id == molecule_id).first()
     if molecule:
         db.delete(molecule)
         db.commit()
-        logger.info(f"Molecule with ID {molecule_id} deleted successfully")
+
+        # Invalidate related cache keys
+        redis_client.delete(f"molecule:{molecule_id}")
+        redis_client.delete("molecules:all")
+
+        logger.info(f"Molecule with ID {molecule_id} deleted successfully and cache invalidated")
         return molecule
+
     logger.warning(f"Molecule with ID {molecule_id} not found for deletion")
     raise HTTPException(status_code=404, detail="Molecule is not found")
