@@ -1,0 +1,35 @@
+Commands needed for DockerFile and DockerCompose
+
+1. Go to directory with DockerFile and activate venv
+.\venv\Scripts\activate
+cd src
+
+2. Build the Docker image
+docker build -t main .
+
+3. Get image id
+docker images
+
+4. Run Docker Container
+ docker run -d -p 80:80 image_id
+ (Open link from docker app)
+ -----------------------------------------------
+ 1. Go to directory with DockerCompose file and activate venv
+.\venv\Scripts\activate
+cd src
+
+2. Build the Docker image
+docker build .
+
+3. Get image id
+docker images
+
+4. Run Docker Container
+docker run -p 3001:8001 image_id
+
+
+
+
+
+
+
