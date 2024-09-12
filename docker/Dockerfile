@@ -5,6 +5,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 CMD [ "python", "./main.py"]
 
 
+
 FROM continuumio/miniconda3
 WORKDIR /rdkit
 COPY ../src /rdkit
