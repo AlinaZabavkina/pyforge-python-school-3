@@ -2,10 +2,11 @@ Commands needed for DockerFile and DockerCompose
 
 1. Go to directory with DockerFile and activate venv
 .\venv\Scripts\activate
-cd src
-
+(work in pyforge-python-school-3)
 2. Build the Docker image
 docker build -t main .
+or
+docker build -f docker/Dockerfile -t myapp .
 
 3. Get image id
 docker images
@@ -16,7 +17,8 @@ docker images
  -----------------------------------------------
  1. Go to directory with DockerCompose file and activate venv
 .\venv\Scripts\activate
-cd src
+(work in pyforge-python-school-3)
+
 
 2. Build the Docker image
 docker build .
