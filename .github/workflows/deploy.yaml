@@ -48,23 +48,20 @@ jobs:
             # Create a directory for the app, sync code from GitHub
             mkdir -p ~/app
             cd ~/app
-            echo 'github workspace /home/runner/work/pyforge-python-school-3'
+            
             # Remove old code and copy the new code
             rm -rf *
-            scp -r /home/runner/work/pyforge-python-school-3/* ~/app
+            scp -r ${{ github.workspace }}/* ~/app
             
             # Stop any running containers
-            docker stop pyforge-python-school-3 || true
-            docker rm pyforge-python-school-3 || true
+            docker stop python-web-app || true
+            docker rm python-web-app || true
             
             # Build Docker image from the new code
-            docker build -t pyforge-python-school-3 .
+            docker build -t python-web-app .
             
             # Run the Docker container
-            docker run -d --name pyforge-python-school-3 -p 80:80 pyforge-python-school-3
+            docker run -d --name python-web-app -p 80:80 python-web-app
             
             # Verify the container is running
             docker ps
-
-#      - name: Build Docker image and run container
-#        run:
