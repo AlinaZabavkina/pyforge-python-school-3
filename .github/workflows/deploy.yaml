@@ -45,18 +45,18 @@ jobs:
 
             # Create a directory for the application code
             mkdir -p ~/app
-      
+            echo '48'
             # Sync the application code from GitHub
             rm -rf ~/app/*
             git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
-      
+            echo '52'
             # Build Docker image from the new code
             docker build -f docker/Dockerfile -t python-web-app 
             docker images # List Docker images to check if build was successful
-      
+            echo '56'
             # Run the Docker container
             docker run -d --name python-web-app -p 80:80 python-web-app || docker logs python-web-app
-      
+            echo '59'
             # Verify the container is running
             docker ps -a
 
