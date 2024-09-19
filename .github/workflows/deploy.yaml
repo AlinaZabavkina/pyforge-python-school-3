@@ -51,7 +51,7 @@ jobs:
             git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
       
             # Build Docker image from the new code
-            docker build -f docker/Dockerfile . -t python-web-app .
+            docker build -f docker/Dockerfile -t python-web-app 
             docker images # List Docker images to check if build was successful
       
             # Run the Docker container
