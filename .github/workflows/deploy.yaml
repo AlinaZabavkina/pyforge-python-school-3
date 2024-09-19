@@ -33,31 +33,38 @@ jobs:
       - name: SSH into EC2 and Deploy Application
         uses: appleboy/ssh-action@master
         with:
-          host: 13.49.221.159
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.EC2_HOST }}  # Replace with your EC2 instance public IP
+          username: ${{ secrets.EC2_USER }}  # Replace with your EC2 username (e.g., ec2-user or ubuntu)
+          key: ${{ secrets.EC2_SSH_KEY }}  # Replace with your EC2 private SSH key
           script: |
+            # Update the EC2 instance
+            sudo apt-get update -y
+            
             # Install Docker if not installed
             if ! [ -x "$(command -v docker)" ]; then
-              sudo apt-get update
               sudo apt-get install -y docker.io
             fi
-            # Create a directory for the application code
+            
+            # Create a directory for the app, sync code from GitHub
             mkdir -p ~/app
-            echo '48'
-            # Sync the application code from GitHub
-            rm -rf ~/app/*
-            git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
-            echo '52'
+            cd ~/app
+            echo 'github workspace ${{ github.workspace }}'
+            # Remove old code and copy the new code
+            rm -rf *
+            scp -r ${{ github.workspace }}/* ~/app
+            
+            # Stop any running containers
+            docker stop pyforge-python-school-3 || true
+            docker rm pyforge-python-school-3 || true
+            
             # Build Docker image from the new code
-            docker build -f docker/Dockerfile -t python-web-app 
-            docker images # List Docker images to check if build was successful
-            echo '56'
+            docker build -t pyforge-python-school-3 .
+            
             # Run the Docker container
-            docker run -d --name python-web-app -p 80:80 python-web-app || docker logs python-web-app
-            echo '59'
+            docker run -d --name pyforge-python-school-3 -p 80:80 pyforge-python-school-3
+            
             # Verify the container is running
-            docker ps -a
+            docker ps
 
 #      - name: Build Docker image and run container
 #        run:
