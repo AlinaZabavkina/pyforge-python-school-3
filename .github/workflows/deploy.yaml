@@ -55,6 +55,9 @@ jobs:
         
             # Run the Docker container
             docker run -d --name python-web-app -p 80:80 python-web-app
+            
+            # Verify the container is running
+            docker ps
 
 #      - name: Build Docker image and run container
 #        run:
