@@ -6,6 +6,10 @@ on:
       - main
       - feat/AWS_workflow
 
+permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
