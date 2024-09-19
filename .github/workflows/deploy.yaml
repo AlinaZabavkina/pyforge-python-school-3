@@ -48,7 +48,7 @@ jobs:
       
             # Sync the application code from GitHub
             rm -rf ~/app/*
-            git clone https://github.com/your_repo ~/app
+            git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
       
             # Build Docker image from the new code
             docker build -f docker/Dockerfile . -t python-web-app .
