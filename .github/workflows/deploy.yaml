@@ -33,35 +33,27 @@ jobs:
       - name: SSH into EC2 and Deploy Application
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}  # Replace with your EC2 instance public IP
-          username: ${{ secrets.EC2_USER }}  # Replace with your EC2 username (e.g., ec2-user or ubuntu)
-          key: ${{ secrets.EC2_SSH_KEY }}  # Replace with your EC2 private SSH key
+          host: 13.49.221.159
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Update the EC2 instance
-            sudo apt-get update -y
-
             # Install Docker if not installed
             if ! [ -x "$(command -v docker)" ]; then
+              sudo apt-get update
               sudo apt-get install -y docker.io
             fi
 
-            # Create a directory for the app, sync code from GitHub
+            # Create a directory for the application code
             mkdir -p ~/app
-            cd ~/app
 
-            # Remove old code and copy the new code
-            rm -rf *
-            scp -r ${{ github.workspace }}/* ~/app
+            # Remove any existing files and sync the application code from GitHub
+            rm -rf ~/app/*
+            exit # TEMP_REMOVE
 
-            # Stop any running containers
-            docker stop python-web-app || true
-            docker rm python-web-app || true
-
+      - name: Build Docker image and run container
+        run:
             # Build Docker image from the new code
-            docker build -t python-web-app .
-
+            docker build  -f docker/Dockerfile . -t python-web-app .
+          
             # Run the Docker container
             docker run -d --name python-web-app -p 80:80 python-web-app
-
-            # Verify the container is running
-            docker ps
