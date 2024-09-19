@@ -48,10 +48,10 @@ jobs:
             # Create a directory for the app, sync code from GitHub
             mkdir -p ~/app
             cd ~/app
-            echo 'github workspace ${{ github.workspace }}'
+            echo 'github workspace /home/runner/work/pyforge-python-school-3'
             # Remove old code and copy the new code
             rm -rf *
-            scp -r ${{ github.workspace }}/* ~/app
+            scp -r /home/runner/work/pyforge-python-school-3/* ~/app
             
             # Stop any running containers
             docker stop pyforge-python-school-3 || true
