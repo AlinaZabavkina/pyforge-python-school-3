@@ -47,7 +47,7 @@ jobs:
             fi
 
             # Remove existing Docker container if it exists
-            if [ $(docker ps -a -q -f name=python-web-app) ]; then
+            if [ $(docker ps -a -q -f name=python_web) ]; then
               docker stop python-web-app
               docker rm python-web-app
             fi
@@ -72,7 +72,7 @@ jobs:
             docker rm -vf $(docker ps -aq)
             
             # Build Docker image from the new code
-            docker build -f docker/Dockerfile -t python-web-app .
+            docker build -f docker/Dockerfile . --tag=dude/python_web:v2
             echo "Docker image built successfully"
 
             # Check if the image was built correctly
@@ -80,7 +80,7 @@ jobs:
             echo 'Echo docker images'
             docker images
             echo 'Running python-web-app'
-            docker run -p 80:80 -d python-web-app
+            docker run -p 80:80 -d python_web
             # Verify the container is running
             echo 'ps -a'
             docker ps -a
