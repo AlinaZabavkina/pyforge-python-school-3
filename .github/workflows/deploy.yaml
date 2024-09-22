@@ -76,7 +76,8 @@ jobs:
             
             echo 'Echo docker images'
             docker images
-
+            echo 'Running python-web-app'
+            docker run -p 80:80 -d python-web-app
             # Verify the container is running
             echo 'ps -a'
             docker ps -a
