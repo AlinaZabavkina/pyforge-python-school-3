@@ -48,8 +48,8 @@ jobs:
 
             # Remove existing Docker container if it exists
             if [ $(docker ps -a -q -f name=python_web) ]; then
-              docker stop python-web-app
-              docker rm python-web-app
+              docker stop python_web
+              docker rm python_web
             fi
             
 
