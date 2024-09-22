@@ -34,8 +34,8 @@ jobs:
       - name: SSH into EC2 and Deploy Application
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          host: 13.49.221.159
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Install Docker if not installed
