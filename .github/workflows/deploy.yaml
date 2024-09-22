@@ -51,6 +51,8 @@ jobs:
               docker stop python-web-app
               docker rm python-web-app
             fi
+            
+            git checkout feat/AWS_workflow
 
             # Check if ~/app directory exists
             if [ -d ~/app ]; then
@@ -65,7 +67,6 @@ jobs:
             
             # Debug repository status after pull or clone
             git status
-            git checkout feat/AWS_workflow
             ls -la ~/app
             
             # Build Docker image from the new code
