@@ -72,7 +72,7 @@ jobs:
             docker rm -vf $(docker ps -aq)
             
             # Build Docker image from the new code
-            docker build  . -t python/web:v3
+            docker build  -t  my-username/my-image .
             echo "Docker image built successfully"
 
             # Check if the image was built correctly
@@ -80,7 +80,7 @@ jobs:
             echo 'Echo docker images'
             docker images
             echo 'Running python-web-app'
-            docker run -p 80:80 -d python/web:v3
+            docker run -p 80:80 -d  my-username/my-image
 
             # Verify the container is running
             echo 'ps -a'
