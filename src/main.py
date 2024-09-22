@@ -5,9 +5,10 @@ from rdkit import Chem
 import logging
 import csv
 import io
-from models import SessionLocal, engine, Molecule
+from models import SessionLocal, Molecule
 from schemas import MoleculeUpdate, MoleculeCreate
 import redis
+
 
 # Connect to Redis
 redis_client = redis.Redis(host='redis', port=6379, db=0)

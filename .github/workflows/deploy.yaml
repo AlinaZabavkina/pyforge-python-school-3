@@ -7,8 +7,8 @@ on:
       - feat/AWS_workflow
 
 permissions:
-      id-token: write   # This is required for requesting the JWT
-      contents: read
+  id-token: write   # Required for requesting the JWT
+  contents: read
 
 jobs:
   deploy:
@@ -20,6 +20,7 @@ jobs:
         run: |
           echo "AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}"
           echo "AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -33,35 +34,33 @@ jobs:
       - name: SSH into EC2 and Deploy Application
         uses: appleboy/ssh-action@master
         with:
-          host: 13.49.221.159  # Replace with your EC2 instance public IP
-          username: ubuntu  # Replace with your EC2 username (e.g., ec2-user or ubuntu)
-          key: ${{ secrets.EC2_SSH_KEY }}  # Replace with your EC2 private SSH key
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Update the EC2 instance
-            sudo apt-get update -y
-            
             # Install Docker if not installed
             if ! [ -x "$(command -v docker)" ]; then
+              sudo apt-get update
               sudo apt-get install -y docker.io
             fi
-            
-            # Create a directory for the app, sync code from GitHub
-            mkdir -p ~/app
-            cd ~/app
-            
-            # Remove old code and copy the new code
-            rm -rf *
-            scp -r ${{ github.workspace }}/* ~/app
-            
-            # Stop any running containers
+
+            # Remove existing Docker container if running
             docker stop python-web-app || true
             docker rm python-web-app || true
-            
+
+            # Create a directory for the application code
+            mkdir -p ~/app
+
+            # Remove any existing files and clone the latest version of the code
+            rm -rf ~/app/*
+            git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
+
             # Build Docker image from the new code
-            docker build -t python-web-app .
-            
-            # Run the Docker container
+            cd ~/app
+            docker build -f docker/Dockerfile -t python-web-app .
+
+            # Run the Docker container, mapping port 80
             docker run -d --name python-web-app -p 80:80 python-web-app
-            
+
             # Verify the container is running
-            docker ps
+            docker ps -a

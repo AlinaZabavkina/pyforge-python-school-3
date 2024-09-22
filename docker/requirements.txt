@@ -2,3 +2,7 @@ fastapi
 uvicorn
 pydantic
 rdkit
+sqlalchemy
+psycopg2-binary
+redis
+python-multipart

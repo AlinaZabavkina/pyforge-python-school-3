@@ -2,6 +2,7 @@ FROM python:3
 WORKDIR /python
 COPY ../src /python
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install python-multipart
 CMD [ "python", "./main.py"]
 
 
