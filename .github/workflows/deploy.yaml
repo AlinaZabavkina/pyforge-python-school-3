@@ -44,9 +44,11 @@ jobs:
               sudo apt-get install -y docker.io
             fi
 
-            # Remove existing Docker container if running
-            docker stop python-web-app || true
-            docker rm python-web-app || true
+            # Remove existing Docker container only if it exists
+            if [ $(docker ps -a -q -f name=python-web-app) ]; then
+              docker stop python-web-app
+              docker rm python-web-app
+            fi
 
             # Create a directory for the application code
             mkdir -p ~/app
