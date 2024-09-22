@@ -52,16 +52,17 @@ jobs:
               docker rm python-web-app
             fi
             
-            git checkout feat/AWS_workflow
 
             # Check if ~/app directory exists
             if [ -d ~/app ]; then
               cd ~/app
+              git checkout feat/AWS_workflow
               git pull   # Pull latest changes
               echo "Successfully pulled the latest changes"
             else
               git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
               cd ~/app
+              git checkout feat/AWS_workflow
               echo "Successfully cloned the repository"
             fi
             
