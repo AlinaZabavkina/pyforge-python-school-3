@@ -39,6 +39,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Install Docker if not installed
+            echo 'Listing files'
+            ls
             if ! [ -x "$(command -v docker)" ]; then
               sudo apt-get update
               sudo apt-get install -y docker.io
@@ -61,6 +63,9 @@ jobs:
               echo "Successfully cloned the repository"
             fi
 
+            echo 'Listing files'
+            ls
+            
             # Debug repository status after pull or clone
             git status
             ls -la ~/app
@@ -70,7 +75,10 @@ jobs:
             echo "Docker image built successfully"
 
             # Check if the image was built correctly
+            
+            echo 'Echo docker images'
             docker images
 
             # Verify the container is running
+            echo 'ps -a'
             docker ps -a
