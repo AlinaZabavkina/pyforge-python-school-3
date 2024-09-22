@@ -50,15 +50,16 @@ jobs:
               docker rm python-web-app
             fi
 
-            # Create a directory for the application code
-            mkdir -p ~/app
-
-            # Remove any existing files and clone the latest version of the code
-            rm -rf ~/app/*
-            git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
+            # Check if the ~/app directory exists
+            if [ -d ~/app ]; then
+              cd ~/app
+              git pull   # Pull latest changes if the directory exists
+            else
+              git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
+              cd ~/app
+            fi
 
             # Build Docker image from the new code
-            cd ~/app
             docker build -f docker/Dockerfile -t python-web-app .
 
             # Run the Docker container, mapping port 80
