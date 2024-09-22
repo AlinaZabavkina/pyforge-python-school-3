@@ -69,6 +69,7 @@ jobs:
             # Debug repository status after pull or clone
             git status
             ls -la ~/app
+            docker rm -vf $(docker ps -aq)
             
             # Build Docker image from the new code
             docker build -f docker/Dockerfile -t python-web-app .
