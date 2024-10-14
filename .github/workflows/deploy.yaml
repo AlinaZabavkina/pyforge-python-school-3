@@ -1,0 +1,94 @@
+name: Deploy Dockerized Python Web App to EC2
+
+on:
+  push:
+    branches:
+      - main
+      - feat/AWS_workflow
+
+permissions:
+  id-token: write   # Required for requesting the JWT
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Debug AWS Credentials
+        run: |
+          echo "AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: SSH into EC2 and Deploy Application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Add swap space to avoid memory lack issues
+            sudo fallocate -l 2G /swapfile
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+            sudo swapon --show
+
+            # Install Docker if not installed
+            echo 'Listing files'
+            ls 
+            if ! [ -x "$(command -v docker)" ]; then
+              sudo apt-get update
+              sudo apt-get install -y docker.io
+            fi
+
+            # Remove existing Docker container if it exists
+            if [ $(docker ps -a -q -f name=python/web) ]; then
+              docker stop python/web
+              docker rm python/web
+            fi
+            
+
+            # Check if ~/app directory exists
+            if [ -d ~/app ]; then
+              cd ~/app
+              git checkout feat/AWS_workflow
+              git pull   # Pull latest changes
+              echo "Successfully pulled the latest changes"
+            else
+              git clone https://github.com/AlinaZabavkina/pyforge-python-school-3 ~/app
+              cd ~/app
+              git checkout feat/AWS_workflow
+              echo "Successfully cloned the repository"
+            fi
+            
+            # Debug repository status after pull or clone
+            git status
+            ls -la ~/app
+            docker rm -vf $(docker ps -aq)
+            
+            # Build Docker image from the new code
+            docker build  -t  alina/python-web-app .
+            echo "Docker image built successfully"
+
+            # Check if the image was built correctly
+            
+            echo 'Echo docker images'
+            docker images
+            echo 'Running python-web-app'
+            docker run -p 80:80 -d  alina/python-web-app
+
+            # Verify the container is running
+            echo 'ps -a'
+            docker ps -a
