@@ -1,5 +1,4 @@
 from datetime import timedelta
-
 import boto3
 import pandas as pd
 from airflow import DAG
@@ -8,7 +7,6 @@ from rdkit import Chem
 from rdkit.Chem import Descriptors
 from sqlalchemy.orm import Session
 import os
-
 from utils.dates import days_ago
 from src.models import SessionLocal, Molecule
 
